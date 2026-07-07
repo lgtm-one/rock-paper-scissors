@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rock Paper Scissors</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #1a1f36;
+      --accent: #6c8cff;
+      --win: #34d399;
+      --lose: #f87171;
+      --draw: #fbbf24;
+      --text: #e8ecff;
+      --muted: #9aa3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, #1c2444, var(--bg));
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .game {
+      width: 100%;
+      max-width: 520px;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      margin: 0 0 22px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .scoreboard {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 22px;
+    }
+
+    .score {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 14px;
+      padding: 12px 8px;
+      flex: 1;
+      margin: 0 6px;
+    }
+
+    .score .label {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .score .value {
+      display: block;
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .hands {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      font-size: 3.4rem;
+      min-height: 72px;
+      margin-bottom: 8px;
+    }
+
+    .hands .vs {
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .result {
+      min-height: 28px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .result.win { color: var(--win); }
+    .result.lose { color: var(--lose); }
+    .result.draw { color: var(--draw); }
+
+    .choices {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .choice {
+      cursor: pointer;
+      font-size: 2rem;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+    }
+
+    .choice:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      background: rgba(108, 140, 255, 0.14);
+    }
+
+    .choice:active { transform: scale(0.94); }
+
+    .reset {
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 8px 18px;
+      font-size: 0.85rem;
+      transition: color 0.12s ease, border-color 0.12s ease;
+    }
+
+    .reset:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <h1>Rock · Paper · Scissors</h1>
+    <p class="subtitle">Pick your move and beat the computer.</p>
+
+    <div class="scoreboard">
+      <div class="score">
+        <span class="label">You</span>
+        <span class="value" id="playerScore">0</span>
+      </div>
+      <div class="score">
+        <span class="label">Ties</span>
+        <span class="value" id="tieScore">0</span>
+      </div>
+      <div class="score">
+        <span class="label">CPU</span>
+        <span class="value" id="cpuScore">0</span>
+      </div>
+    </div>
+
+    <div class="hands">
+      <span id="playerHand">❔</span>
+      <span class="vs">VS</span>
+      <span id="cpuHand">❔</span>
+    </div>
+
+    <div class="result" id="result">Make your move!</div>
+
+    <div class="choices">
+      <button class="choice" data-choice="rock" aria-label="Rock">🪨</button>
+      <button class="choice" data-choice="paper" aria-label="Paper">📄</button>
+      <button class="choice" data-choice="scissors" aria-label="Scissors">✂️</button>
+    </div>
+
+    <button class="reset" id="reset">Reset scores</button>
+  </main>
+
+  <script>
+    const EMOJI = { rock: "🪨", paper: "📄", scissors: "✂️" };
+    const BEATS = { rock: "scissors", paper: "rock", scissors: "paper" };
+    const CHOICES = Object.keys(EMOJI);
+
+    const scores = { player: 0, cpu: 0, tie: 0 };
+
+    const els = {
+      playerScore: document.getElementById("playerScore"),
+      cpuScore: document.getElementById("cpuScore"),
+      tieScore: document.getElementById("tieScore"),
+      playerHand: document.getElementById("playerHand"),
+      cpuHand: document.getElementById("cpuHand"),
+      result: document.getElementById("result"),
+    };
+
+    function play(playerChoice) {
+      const cpuChoice = CHOICES[Math.floor(Math.random() * CHOICES.length)];
+
+      els.playerHand.textContent = EMOJI[playerChoice];
+      els.cpuHand.textContent = EMOJI[cpuChoice];
+
+      let outcome, message;
+      if (playerChoice === cpuChoice) {
+        outcome = "draw";
+        message = "It's a tie!";
+        scores.tie++;
+      } else if (BEATS[playerChoice] === cpuChoice) {
+        outcome = "win";
+        message = `You win! ${cap(playerChoice)} beats ${cpuChoice}.`;
+        scores.player++;
+      } else {
+        outcome = "lose";
+        message = `You lose! ${cap(cpuChoice)} beats ${playerChoice}.`;
+        scores.cpu++;
+      }
+
+      els.result.textContent = message;
+      els.result.className = "result " + outcome;
+      render();
+    }
+
+    function cap(word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+
+    function render() {
+      els.playerScore.textContent = scores.player;
+      els.cpuScore.textContent = scores.cpu;
+      els.tieScore.textContent = scores.tie;
+    }
+
+    document.querySelectorAll(".choice").forEach((btn) => {
+      btn.addEventListener("click", () => play(btn.dataset.choice));
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      scores.player = scores.cpu = scores.tie = 0;
+      els.playerHand.textContent = "❔";
+      els.cpuHand.textContent = "❔";
+      els.result.textContent = "Make your move!";
+      els.result.className = "result";
+      render();
+    });
+  </script>
+</body>
+</html>
