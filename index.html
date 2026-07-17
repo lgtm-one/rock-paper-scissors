@@ -3,20 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rock Paper Scissors</title>
+  <title>Rock Paper Scissors — The Duel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0f1220;
-      --panel: #1a1f36;
-      --accent: #6c8cff;
-      --win: #34d399;
-      --lose: #f87171;
-      --draw: #fbbf24;
-      --text: #e8ecff;
-      --muted: #9aa3c7;
+      --void: #16111f;
+      --arena: #211a2e;
+      --magenta: #ff3b6b;   /* YOU / player */
+      --cyan: #29d3ff;      /* CPU */
+      --gold: #ffd23f;      /* draw + verdict glow */
+      --ink: #f5eefc;       /* text */
+      --muted: #9c93b0;
+
+      --font-display: "Anton", system-ui, sans-serif;
+      --font-body: "Chakra Petch", system-ui, sans-serif;
     }
 
     * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
 
     body {
       margin: 0;
@@ -24,171 +31,378 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: radial-gradient(1200px 600px at 50% -10%, #1c2444, var(--bg));
-      color: var(--text);
-      padding: 24px;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 700px at 15% -10%, rgba(255, 59, 107, 0.14), transparent 60%),
+        radial-gradient(1100px 700px at 85% -10%, rgba(41, 211, 255, 0.14), transparent 60%),
+        var(--void);
+      padding: clamp(16px, 4vw, 40px);
+      overflow-x: hidden;
     }
 
-    .game {
+    /* Screen-shake wrapper */
+    .stage {
       width: 100%;
-      max-width: 520px;
-      background: var(--panel);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 20px;
-      padding: 28px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      max-width: 760px;
+    }
+
+    .stage.shake { animation: shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+    @keyframes shake {
+      10%, 90% { transform: translate(-1px, 0); }
+      20%, 80% { transform: translate(3px, 0); }
+      30%, 50%, 70% { transform: translate(-6px, 0); }
+      40%, 60% { transform: translate(6px, 0); }
+    }
+
+    /* ---- Header ---- */
+    .title {
+      font-family: var(--font-display);
+      text-transform: uppercase;
       text-align: center;
+      margin: 0;
+      font-size: clamp(2.4rem, 8vw, 4.6rem);
+      line-height: 0.9;
+      letter-spacing: 0.04em;
+      background: linear-gradient(100deg, var(--magenta) 0%, var(--ink) 50%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.5));
     }
 
-    h1 {
-      margin: 0 0 4px;
-      font-size: 1.6rem;
-      letter-spacing: 0.5px;
-    }
-
-    .subtitle {
-      margin: 0 0 22px;
+    .announce {
+      font-family: var(--font-body);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      font-weight: 600;
+      font-size: clamp(0.72rem, 2.4vw, 0.9rem);
       color: var(--muted);
-      font-size: 0.9rem;
+      margin: 10px 0 22px;
+      min-height: 1.2em;
+      transition: color 0.2s ease;
     }
+    .announce.win  { color: var(--magenta); }
+    .announce.lose { color: var(--cyan); }
+    .announce.draw { color: var(--gold); }
 
+    /* ---- Scoreboard ---- */
     .scoreboard {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 22px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: clamp(8px, 2vw, 18px);
+      max-width: 480px;
+      margin: 0 auto 22px;
     }
 
-    .score {
-      background: rgba(255, 255, 255, 0.04);
-      border-radius: 14px;
-      padding: 12px 8px;
-      flex: 1;
-      margin: 0 6px;
-    }
+    .score { text-align: center; }
 
     .score .label {
       display: block;
-      font-size: 0.72rem;
-      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+      margin-bottom: 2px;
     }
 
     .score .value {
       display: block;
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-top: 4px;
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 8vw, 3.4rem);
+      line-height: 1;
     }
 
-    .hands {
+    .score.you  .value { color: var(--magenta); text-shadow: 0 0 22px rgba(255, 59, 107, 0.5); }
+    .score.cpu  .value { color: var(--cyan);    text-shadow: 0 0 22px rgba(41, 211, 255, 0.5); }
+    .score.ties .value { color: var(--gold);    text-shadow: 0 0 22px rgba(255, 210, 63, 0.45); }
+
+    .score .value.bump { animation: bump 0.35s ease; }
+    @keyframes bump {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+
+    .score-sep {
+      font-family: var(--font-display);
+      color: rgba(245, 238, 252, 0.18);
+      font-size: 1.4rem;
+    }
+
+    /* ---- Arena / Face-off ---- */
+    .arena {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--arena);
+      border: 1px solid rgba(245, 238, 252, 0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+    }
+
+    .fighter {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: clamp(28px, 6vw, 52px) clamp(16px, 4vw, 40px);
+      min-height: 220px;
+    }
+
+    .fighter.you {
+      background: radial-gradient(120% 100% at 0% 50%, rgba(255, 59, 107, 0.16), transparent 70%);
+    }
+    .fighter.cpu {
+      background: radial-gradient(120% 100% at 100% 50%, rgba(41, 211, 255, 0.16), transparent 70%);
+    }
+
+    .fighter .name {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: clamp(1rem, 3.4vw, 1.5rem);
+    }
+    .fighter.you .name { color: var(--magenta); }
+    .fighter.cpu .name { color: var(--cyan); }
+
+    .hand {
+      font-size: clamp(3.6rem, 14vw, 6rem);
+      line-height: 1;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+      user-select: none;
+    }
+
+    .hand.reveal { animation: reveal 0.4s cubic-bezier(0.2, 1.4, 0.4, 1); }
+    @keyframes reveal {
+      0%   { transform: translateY(-14px) rotate(-12deg) scale(0.6); opacity: 0.2; }
+      60%  { transform: translateY(4px) rotate(6deg) scale(1.12); opacity: 1; }
+      100% { transform: translateY(0) rotate(0) scale(1); }
+    }
+
+    /* Jagged lightning seam between fighters */
+    .seam {
+      position: absolute;
+      top: -2%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26px;
+      height: 104%;
+      background: linear-gradient(180deg, var(--magenta), var(--gold) 50%, var(--cyan));
+      clip-path: polygon(
+        50% 0%, 30% 8%, 62% 16%, 34% 24%, 66% 32%, 30% 40%,
+        60% 48%, 32% 56%, 64% 64%, 34% 72%, 62% 80%, 30% 88%, 50% 100%,
+        70% 88%, 38% 80%, 66% 72%, 36% 64%, 68% 56%, 40% 48%,
+        70% 40%, 34% 32%, 66% 24%, 38% 16%, 70% 8%
+      );
+      filter: drop-shadow(0 0 10px rgba(255, 210, 63, 0.6));
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* ---- Verdict stamp ---- */
+    .verdict {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 18px;
-      font-size: 3.4rem;
-      min-height: 72px;
-      margin-bottom: 8px;
+      pointer-events: none;
+      z-index: 4;
     }
 
-    .hands .vs {
-      font-size: 1rem;
-      color: var(--muted);
-      font-weight: 700;
+    .verdict span {
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: clamp(3rem, 16vw, 7rem);
+      color: var(--ink);
+      opacity: 0;
+      transform: scale(2.4) rotate(-8deg);
+      padding: 0 0.15em;
+      border-radius: 12px;
     }
 
-    .result {
-      min-height: 28px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin-bottom: 20px;
+    .verdict.show span { animation: stamp 0.5s cubic-bezier(0.18, 0.9, 0.24, 1.2) forwards; }
+    @keyframes stamp {
+      0%   { opacity: 0; transform: scale(2.4) rotate(-8deg); }
+      55%  { opacity: 1; transform: scale(0.92) rotate(-4deg); }
+      70%  { transform: scale(1.06) rotate(-4deg); }
+      100% { opacity: 1; transform: scale(1) rotate(-4deg); }
     }
 
-    .result.win { color: var(--win); }
-    .result.lose { color: var(--lose); }
-    .result.draw { color: var(--draw); }
+    .verdict.win  span { color: var(--magenta); text-shadow: 0 0 28px rgba(255, 59, 107, 0.7), 0 0 6px rgba(255, 210, 63, 0.6); }
+    .verdict.lose span { color: var(--cyan);    text-shadow: 0 0 28px rgba(41, 211, 255, 0.7), 0 0 6px rgba(255, 210, 63, 0.6); }
+    .verdict.draw span { color: var(--gold);    text-shadow: 0 0 30px rgba(255, 210, 63, 0.8); }
 
-    .choices {
+    /* ---- Move selectors ---- */
+    .weapons {
       display: flex;
       justify-content: center;
-      gap: 14px;
-      margin-bottom: 18px;
+      gap: clamp(12px, 3vw, 22px);
+      margin: 26px 0 18px;
     }
 
-    .choice {
+    .weapon {
       cursor: pointer;
-      font-size: 2rem;
-      width: 84px;
-      height: 84px;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--text);
-      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      width: clamp(88px, 24vw, 128px);
+      padding: 16px 8px 12px;
+      border-radius: 16px;
+      border: 2px solid rgba(245, 238, 252, 0.12);
+      background: linear-gradient(180deg, rgba(245, 238, 252, 0.05), rgba(245, 238, 252, 0.02));
+      color: var(--ink);
+      font-family: var(--font-body);
+      transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
     }
 
-    .choice:hover {
-      transform: translateY(-4px);
-      border-color: var(--accent);
-      background: rgba(108, 140, 255, 0.14);
+    .weapon .glyph { font-size: clamp(1.9rem, 7vw, 2.6rem); line-height: 1; }
+
+    .weapon .tag {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+      color: var(--muted);
     }
 
-    .choice:active { transform: scale(0.94); }
+    .weapon:hover {
+      transform: translateY(-6px);
+      border-color: var(--magenta);
+      background: linear-gradient(180deg, rgba(255, 59, 107, 0.16), rgba(255, 59, 107, 0.04));
+      box-shadow: 0 14px 30px rgba(255, 59, 107, 0.22);
+    }
+    .weapon:hover .tag { color: var(--ink); }
+
+    .weapon:active { transform: translateY(-2px) scale(0.96); }
+
+    .weapon:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+      border-color: var(--gold);
+    }
+
+    /* ---- Reset ---- */
+    .footer { text-align: center; }
 
     .reset {
       cursor: pointer;
-      background: transparent;
+      font-family: var(--font-body);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 0.78rem;
+      font-weight: 600;
       color: var(--muted);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 10px;
-      padding: 8px 18px;
-      font-size: 0.85rem;
-      transition: color 0.12s ease, border-color 0.12s ease;
+      background: transparent;
+      border: 1px solid rgba(245, 238, 252, 0.16);
+      border-radius: 999px;
+      padding: 9px 22px;
+      transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
     }
 
     .reset:hover {
-      color: var(--text);
-      border-color: var(--accent);
+      color: var(--void);
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .reset:focus-visible {
+      outline: 3px solid var(--gold);
+      outline-offset: 3px;
+    }
+
+    /* ---- Responsive: stack fighters ---- */
+    @media (max-width: 520px) {
+      .arena { grid-template-columns: 1fr; }
+      .seam {
+        top: 50%;
+        left: -2%;
+        transform: translateY(-50%) rotate(90deg);
+        transform-origin: center;
+        width: 22px;
+        height: 104%;
+      }
+    }
+
+    /* ---- Reduced motion: instant, no shake/reveal ---- */
+    @media (prefers-reduced-motion: reduce) {
+      .stage.shake,
+      .hand.reveal,
+      .verdict.show span,
+      .score .value.bump {
+        animation: none !important;
+      }
+      .verdict.show span { opacity: 1; transform: scale(1) rotate(-4deg); }
+      * { transition: none !important; }
     }
   </style>
 </head>
 <body>
-  <main class="game">
-    <h1>Rock · Paper · Scissors</h1>
-    <p class="subtitle">Pick your move and beat the computer.</p>
+  <div class="stage" id="stage">
+    <header>
+      <h1 class="title">The Duel</h1>
+      <p class="announce" id="announce" role="status" aria-live="polite">Choose your weapon.</p>
+    </header>
 
-    <div class="scoreboard">
-      <div class="score">
+    <section class="scoreboard" aria-label="Scoreboard">
+      <div class="score you">
         <span class="label">You</span>
         <span class="value" id="playerScore">0</span>
       </div>
-      <div class="score">
+      <span class="score-sep" aria-hidden="true">/</span>
+      <div class="score ties">
         <span class="label">Ties</span>
         <span class="value" id="tieScore">0</span>
       </div>
-      <div class="score">
+      <span class="score-sep" aria-hidden="true">/</span>
+      <div class="score cpu">
         <span class="label">CPU</span>
         <span class="value" id="cpuScore">0</span>
       </div>
+    </section>
+
+    <section class="arena" aria-label="Versus face-off">
+      <div class="fighter you">
+        <span class="name">You</span>
+        <span class="hand" id="playerHand" role="img" aria-label="Your move: not chosen yet">❔</span>
+      </div>
+      <div class="fighter cpu">
+        <span class="name">CPU</span>
+        <span class="hand" id="cpuHand" role="img" aria-label="CPU move: not chosen yet">❔</span>
+      </div>
+      <div class="seam" aria-hidden="true"></div>
+      <div class="verdict" id="verdict" aria-hidden="true"><span></span></div>
+    </section>
+
+    <div class="weapons" role="group" aria-label="Pick your move">
+      <button class="weapon" data-choice="rock" aria-label="Play rock">
+        <span class="glyph" aria-hidden="true">🪨</span>
+        <span class="tag">Rock</span>
+      </button>
+      <button class="weapon" data-choice="paper" aria-label="Play paper">
+        <span class="glyph" aria-hidden="true">📄</span>
+        <span class="tag">Paper</span>
+      </button>
+      <button class="weapon" data-choice="scissors" aria-label="Play scissors">
+        <span class="glyph" aria-hidden="true">✂️</span>
+        <span class="tag">Scissors</span>
+      </button>
     </div>
 
-    <div class="hands">
-      <span id="playerHand">❔</span>
-      <span class="vs">VS</span>
-      <span id="cpuHand">❔</span>
+    <div class="footer">
+      <button class="reset" id="reset">Reset scores</button>
     </div>
-
-    <div class="result" id="result">Make your move!</div>
-
-    <div class="choices">
-      <button class="choice" data-choice="rock" aria-label="Rock">🪨</button>
-      <button class="choice" data-choice="paper" aria-label="Paper">📄</button>
-      <button class="choice" data-choice="scissors" aria-label="Scissors">✂️</button>
-    </div>
-
-    <button class="reset" id="reset">Reset scores</button>
-  </main>
+  </div>
 
   <script>
     const EMOJI = { rock: "🪨", paper: "📄", scissors: "✂️" };
@@ -198,42 +412,75 @@
     const scores = { player: 0, cpu: 0, tie: 0 };
 
     const els = {
+      stage: document.getElementById("stage"),
       playerScore: document.getElementById("playerScore"),
       cpuScore: document.getElementById("cpuScore"),
       tieScore: document.getElementById("tieScore"),
       playerHand: document.getElementById("playerHand"),
       cpuHand: document.getElementById("cpuHand"),
-      result: document.getElementById("result"),
+      announce: document.getElementById("announce"),
+      verdict: document.getElementById("verdict"),
+      verdictText: document.querySelector("#verdict span"),
     };
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function cap(word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+
+    // Re-trigger a CSS animation by toggling its class
+    function replay(el, cls) {
+      if (reduceMotion) return;
+      el.classList.remove(cls);
+      void el.offsetWidth; // force reflow
+      el.classList.add(cls);
+    }
 
     function play(playerChoice) {
       const cpuChoice = CHOICES[Math.floor(Math.random() * CHOICES.length)];
 
       els.playerHand.textContent = EMOJI[playerChoice];
       els.cpuHand.textContent = EMOJI[cpuChoice];
+      els.playerHand.setAttribute("aria-label", "Your move: " + cap(playerChoice));
+      els.cpuHand.setAttribute("aria-label", "CPU move: " + cap(cpuChoice));
+      replay(els.playerHand, "reveal");
+      replay(els.cpuHand, "reveal");
 
-      let outcome, message;
+      let outcome, message, stamp, bumpEl;
       if (playerChoice === cpuChoice) {
         outcome = "draw";
+        stamp = "Draw";
         message = "It's a tie!";
         scores.tie++;
+        bumpEl = els.tieScore;
       } else if (BEATS[playerChoice] === cpuChoice) {
         outcome = "win";
+        stamp = "Win";
         message = `You win! ${cap(playerChoice)} beats ${cpuChoice}.`;
         scores.player++;
+        bumpEl = els.playerScore;
       } else {
         outcome = "lose";
+        stamp = "Lose";
         message = `You lose! ${cap(cpuChoice)} beats ${playerChoice}.`;
         scores.cpu++;
+        bumpEl = els.cpuScore;
       }
 
-      els.result.textContent = message;
-      els.result.className = "result " + outcome;
-      render();
-    }
+      els.announce.textContent = message;
+      els.announce.className = "announce " + outcome;
 
-    function cap(word) {
-      return word.charAt(0).toUpperCase() + word.slice(1);
+      // Verdict stamp
+      els.verdictText.textContent = stamp;
+      els.verdict.className = "verdict " + outcome;
+      replay(els.verdict, "show");
+
+      // Screen-shake on decisive rounds only
+      if (outcome !== "draw") replay(els.stage, "shake");
+
+      render();
+      replay(bumpEl, "bump");
     }
 
     function render() {
@@ -242,7 +489,7 @@
       els.tieScore.textContent = scores.tie;
     }
 
-    document.querySelectorAll(".choice").forEach((btn) => {
+    document.querySelectorAll(".weapon").forEach((btn) => {
       btn.addEventListener("click", () => play(btn.dataset.choice));
     });
 
@@ -250,8 +497,12 @@
       scores.player = scores.cpu = scores.tie = 0;
       els.playerHand.textContent = "❔";
       els.cpuHand.textContent = "❔";
-      els.result.textContent = "Make your move!";
-      els.result.className = "result";
+      els.playerHand.setAttribute("aria-label", "Your move: not chosen yet");
+      els.cpuHand.setAttribute("aria-label", "CPU move: not chosen yet");
+      els.announce.textContent = "Choose your weapon.";
+      els.announce.className = "announce";
+      els.verdict.className = "verdict";
+      els.verdictText.textContent = "";
       render();
     });
   </script>
